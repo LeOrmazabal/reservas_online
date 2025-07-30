@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Calendario de Reservas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Bootstrap & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .calendar-wrapper {
+      overflow-x: auto;
+    }
+
+    .calendar-table {
+      min-width: 1000px;
+    }
+
+    .calendar-table th,
+    .calendar-table td {
+      text-align: center;
+      vertical-align: top;
+      border: 1px solid #ccc;
+      padding: 5px;
+    }
+
+    .calendar-table th:first-child,
+    .calendar-table td:first-child {
+      position: sticky;
+      left: 0;
+      background: #fff;
+      z-index: 2;
+      min-width: 200px;
+      text-align: left;
+    }
+
+    .calendar-cell {
+      min-width: 120px;
+      height: 120px;
+      padding: 4px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .disponible {
+      background-color: #fff8d5;
+    }
+
+    .reservado {
+      background-color: #d8fdd8;
+    }
+
+    .futuro {
+      background-color: #d5f1ff;
+    }
+
+    .mantenimiento {
+      background-color: #ffd6d6;
+    }
+
+    .calendar-cell:hover {
+      outline: 2px solid #333;
+    }
+
+    .estado-icon {
+      font-size: 1.2em;
+    }
+
+    .scroll-container {
+      overflow-x: auto;
+    }
+
+    .unidad-label {
+      font-weight: bold;
+      font-size: 1rem;
+    }
+
+    .calendar-cell .btn {
+      font-size: 0.7rem;
+      padding: 2px 6px;
+    }
+  </style>
+</head>
+<body class="p-4">
+
+<div class="container-fluid">
+  <h3 class="mb-4">Calendario de Reservas</h3>
+
+  <!-- Filtros de fecha -->
+  <div class="row mb-3">
+    <div class="col-md-3">
+      <label>Mes:</label>
+      <select id="mes" class="form-select">
+        <!-- Se completa dinámicamente -->
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label>Año:</label>
+      <select id="anio" class="form-select">
+        <!-- Se completa dinámicamente -->
+      </select>
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+      <button id="cargar" class="btn btn-primary w-100">Cargar calendario</button>
+    </div>
+  </div>
+
+  <!-- Tabla calendario -->
+  <div class="calendar-wrapper">
+    <table class="table calendar-table table-bordered">
+      <thead>
+        <tr id="dias-header">
+          <th>Unidad</th>
+          <!-- Días se generan dinámicamente -->
+        </tr>
+      </thead>
+      <tbody id="calendar-body">
+        <!-- Unidades y celdas -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+  const unidades = [
+    { id: 1, nombre: "Cabaña 1" },
+    { id: 2, nombre: "Cabaña 2" },
+    { id: 3, nombre: "Casa del Lago" }
+  ];
+
+  const estados = ['disponible', 'reservado', 'futuro', 'mantenimiento'];
+
+  function llenarCombos() {
+    const $mes = $('#mes');
+    const $anio = $('#anio');
+    const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    
+    $mes.empty();
+    meses.forEach((m, i) => {
+      $mes.append(`<option value="${i}">${m}</option>`);
+    });
+
+    const anioActual = new Date().getFullYear();
+    for (let a = anioActual - 2; a <= anioActual + 2; a++) {
+      $anio.append(`<option value="${a}">${a}</option>`);
+    }
+
+    $mes.val(new Date().getMonth());
+    $anio.val(anioActual);
+  }
+
+  function generarTabla(mes, anio) {
+    const dias = new Date(anio, parseInt(mes) + 1, 0).getDate();
+    const $header = $('#dias-header');
+    const $body = $('#calendar-body');
+
+    // Limpiar
+    $header.find("th:gt(0)").remove();
+    $body.empty();
+
+    // Cabecera de días
+    for (let d = 1; d <= dias; d++) {
+      $header.append(`<th>${d}</th>`);
+    }
+
+    // Filas de unidades
+    unidades.forEach(unidad => {
+      let fila = `<tr><td class="unidad-label">${unidad.nombre}</td>`;
+      for (let dia = 1; dia <= dias; dia++) {
+        const estado = estados[Math.floor(Math.random() * estados.length)];
+        let icono = '';
+        if (estado === 'disponible') icono = 'bi-check-circle-fill';
+        else if (estado === 'reservado') icono = 'bi-person-fill-check';
+        else if (estado === 'futuro') icono = 'bi-calendar-check';
+        else if (estado === 'mantenimiento') icono = 'bi-tools';
+
+        fila += `
+          <td class="calendar-cell ${estado}" data-unidad="${unidad.id}" data-dia="${dia}">
+            <div class="estado-icon mb-1"><i class="bi ${icono}"></i></div>
+            <div class="cliente">Juan Pérez</div>
+            <div class="pago text-muted">Pagado</div>
+            <div class="dias">5 días</div>
+            <button class="btn btn-outline-dark btn-sm mt-1">Ver</button>
+          </td>`;
+      }
+      fila += '</tr>';
+      $body.append(fila);
+    });
+  }
+
+  $(function () {
+    llenarCombos();
+    generarTabla($('#mes').val(), $('#anio').val());
+
+    $('#cargar').click(function () {
+      const mes = $('#mes').val();
+      const anio = $('#anio').val();
+      generarTabla(mes, anio);
+    });
+
+    // Click a celdas
+    $(document).on('click', '.calendar-cell', function () {
+      const dia = $(this).data('dia');
+      const unidad = $(this).data('unidad');
+      alert(`Clic en Unidad ${unidad}, día ${dia}`);
+    });
+  });
+</script>
+</body>
+</html>
